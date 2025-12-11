@@ -6,9 +6,11 @@ authors = [
     {name = "Maksim-de",email = "maksim.arkhipov.020@mail.ru"}
 ]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.9,<3.10"
 dependencies = [
-    "pandas (==2.2.3)"
+    "pandas (==2.2.3)",
+    "transformers (>=4.57.3,<5.0.0)",
+    "torch (==2.0.1)"
 ]
 
 
