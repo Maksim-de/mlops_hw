@@ -6,14 +6,69 @@ authors = [
     {name = "Maksim-de",email = "maksim.arkhipov.020@mail.ru"}
 ]
 readme = "README.md"
-requires-python = ">=3.9,<3.10"
+requires-python = ">=3.13,<3.14"
 dependencies = [
-    "pandas (==2.2.3)",
-    "transformers (>=4.57.3,<5.0.0)",
-    "torch (==2.0.1)"
+    "torch (>=2.9.1,<3.0.0)",
+    "pandas (>=2.3.3,<3.0.0)",
+    "albumentations (>=2.0.8,<3.0.0)"
+
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pre-commit (>=4.5.0,<5.0.0)",
+    "fire (>=0.7.1,<0.8.0)"
+]
+
+
+
+[tool.ruff]
+line-length = 100
+format = { docstring-code-format = true }
+
+[tool.ruff.lint]
+select = [
+    # isort
+    "I",
+    # pycodestyle
+    "E", "W",
+    # Pyflakes
+    "F",
+    # # pyupgrade
+    # "UP",
+    # # flake8-bugbear
+    # "B",
+    # # flake8-simplify
+    # "SIM",
+    # # flake8-builtins
+    # "A",
+    # # flake8-return
+    # "RET",
+    # # flake8-use-pathlib
+    # "PTH",
+    # # flynt
+    # "FLY",
+    # # mccabe
+    # "C90",
+    # # NumPy-specific rules
+    # "NPY",
+    # # pep8-naming
+    # "N",
+    # # Ruff-specific rules
+    # "RUF",
+    # # Pylint - very strict, may be use when have enough time
+    # "PL",
+    # # refurb - also may be overwhelming
+    # "FURB",
+]
+
+pycodestyle = { max-doc-length = 105 }
+
+# [tool.ruff.lint.per-file-ignores]
+# "__init__.py" = ["E402"]
+# "**/{tests,docs,tools}/*" = ["E402"]
