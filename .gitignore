@@ -6,3 +6,6 @@
 *.iws
 *.iml
 *.ipr
+mlops_hw/logs/
+*__pycache__
+*.ipynb
