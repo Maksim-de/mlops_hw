@@ -1,33 +1,32 @@
-from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from pytorch_lightning.loggers import TensorBoardLogger, MLFlowLogger
-import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-print(os.path.abspath(__file__))
-from models.joint_model import *
-from data.preprocess_data import *
-import mlflow
 
 import hydra
+import mlflow
+from data.preprocess_data import preprocess_data_for_model
+from models.joint_model import MultiModalLightningModule
 from omegaconf import DictConfig, OmegaConf
+from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import MLFlowLogger, TensorBoardLogger
+
+# import sys
+
+
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# print(os.path.abspath(__file__))
+
 
 @hydra.main(version_base=None, config_path="../../conf", config_name="config")
-def train_model(
-    cfg: DictConfig
-):
-
+def train_model(cfg: DictConfig):
     print(cfg.text_model)
     print(cfg.image_model)
     print(cfg.data)
     print(cfg.train)
     print(cfg.mlflow)
-    print(torch.backends.mps.is_available())
-    print(torch.backends.mps.is_built())
 
     if cfg.mlflow.get("tracking_uri"):
         mlflow.set_tracking_uri(cfg.mlflow.tracking_uri)
-    
+
     experiment_name = cfg.mlflow.get("experiment_name", "shopee_experiment")
     mlflow.set_experiment(experiment_name)
 
@@ -40,21 +39,19 @@ def train_model(
         beta=cfg.beta,
         base=cfg.base,
         momentum=cfg.momentum,
-        retrieval_k_values= cfg.metriks_k,
+        retrieval_k_values=cfg.metriks_k,
     )
 
-
     datamodule = preprocess_data_for_model(
-        df_path = cfg.data.df_path,
-        little_filter_count = cfg.data.little_filter_count,
-        tokenizer = model.tokenizator,  
-        train_ratio = cfg.data.train_ratio,  
-        image_dir = cfg.data.image_dir,
-        num_workers = cfg.data.num_workers,
-        prefetch_factor = cfg.data.prefetch_factor,
-        p_sampler = cfg.data.p_sampler,
-        k_sampler = cfg.data.k_sampler,
-        
+        df_path=cfg.data.df_path,
+        little_filter_count=cfg.data.little_filter_count,
+        tokenizer=model.tokenizator,
+        train_ratio=cfg.data.train_ratio,
+        image_dir=cfg.data.image_dir,
+        num_workers=cfg.data.num_workers,
+        prefetch_factor=cfg.data.prefetch_factor,
+        p_sampler=cfg.data.p_sampler,
+        k_sampler=cfg.data.k_sampler,
     )
 
     checkpoint_callback = ModelCheckpoint(
@@ -66,18 +63,16 @@ def train_model(
         verbose=True,
     )
 
-    tb_logger = TensorBoardLogger(save_dir="./logs", name="multimodal_model", default_hp_metric=False)
+    tb_logger = TensorBoardLogger(
+        save_dir="./logs", name="multimodal_model", default_hp_metric=False
+    )
 
     mlflow_logger = MLFlowLogger(
         experiment_name=experiment_name,
-        run_name=cfg.mlflow.get("run_name", f"run_{os.environ.get('USER', 'unknown')}"),
+        run_name=cfg.mlflow.get("run_name"),
         tracking_uri=cfg.mlflow.get("tracking_uri", "file:./mlruns"),
-        tags={
-            "project": "shopee",
-            "user": os.environ.get("USER", "unknown"),
-            "device": "mps" if torch.backends.mps.is_available() else "cpu",
-        },
-        log_model=True,  
+        tags={"project": "shopee", "user": os.environ.get("USER", "unknown")},
+        log_model=True,
     )
 
     loggers = [tb_logger, mlflow_logger]
@@ -86,7 +81,7 @@ def train_model(
 
     trainer = Trainer(
         max_epochs=cfg.train.max_epochs,
-        accelerator="mps",  
+        accelerator="mps",
         logger=loggers,
         callbacks=[checkpoint_callback],
         log_every_n_steps=cfg.train.log_every_n_steps,
@@ -96,19 +91,18 @@ def train_model(
         enable_progress_bar=cfg.train.enable_progress_bar,
         deterministic=cfg.train.deterministic,
         # Добавляем для отладки
-        num_sanity_val_steps=cfg.train.num_sanity_val_steps,  # проверяем 2 валидационных шага перед обучением
+        num_sanity_val_steps=cfg.train.num_sanity_val_steps,
     )
 
     trainer.fit(model, datamodule=datamodule)
 
     best_model = MultiModalLightningModule.load_from_checkpoint(checkpoint_callback.best_model_path)
-    
 
     return best_model
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Отключаем multiprocessing для диагностики
     os.environ["OMP_NUM_THREADS"] = "1"
-    
+
     model = train_model()

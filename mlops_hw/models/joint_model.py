@@ -1,17 +1,12 @@
-from models.text_models import *
-from models.image_model import *
-import torch.nn as nn
+import madgrad
 import pytorch_lightning as pl
-from transformers import AutoModel, AutoTokenizer
-from typing import Dict, Any, Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-import madgrad
-
+from models.image_model import SimpleMobileNetV3
+from models.text_models import TinyBERTWrapper
 from pytorch_metric_learning.losses import MultiSimilarityLoss
-from pytorch_metric_learning.miners import MultiSimilarityMiner
+
 
 def compute_retrieval_metrics(embeddings, labels, k_values=50):
     """
@@ -25,22 +20,19 @@ def compute_retrieval_metrics(embeddings, labels, k_values=50):
     Returns:
         metrics: словарь с метриками
     """
-    from sklearn.neighbors import NearestNeighbors
     import numpy as np
+    from sklearn.neighbors import NearestNeighbors
 
     n_samples = len(embeddings)
 
     # 1. Находим k ближайших соседей для каждого товара
     max_k = k_values + 1  # +1 потому что первый сосед - сам элемент
-    knn = NearestNeighbors(n_neighbors=max_k, metric='cosine')
+    knn = NearestNeighbors(n_neighbors=max_k, metric="cosine")
     knn.fit(embeddings)
 
     distances, indices = knn.kneighbors(embeddings)
 
     # 2. Вычисляем recall@K, precision@K, F1@K для каждого K
-    recalls = {}
-    precisions = {}
-    f1_scores = {}
     metrics = {}
 
     all_recalls = []
@@ -49,9 +41,8 @@ def compute_retrieval_metrics(embeddings, labels, k_values=50):
     ndcg_scores = []
 
     for i in range(n_samples):
-        neighbor_indices = indices[i, 1:k_values+1]
+        neighbor_indices = indices[i, 1 : k_values + 1]
         neighbor_labels = labels[neighbor_indices]
-        
 
         # Сколько соседей имеют тот же label?
         correct = np.sum(neighbor_labels == labels[i])
@@ -70,19 +61,17 @@ def compute_retrieval_metrics(embeddings, labels, k_values=50):
         all_recalls.append(recall_i)
         all_precisions.append(precision_i)
         all_f1.append(f1_i)
-        
 
         relevance_vector = (neighbor_labels == labels[i]).astype(float)
         dcg = 0.0
         for j, rel in enumerate(relevance_vector, start=1):
-                dcg += rel / np.log2(j + 1)
-        
-       
+            dcg += rel / np.log2(j + 1)
+
         num_relevant = min(total_relevant_items, k_values)
         idcg = 0.0
         for j in range(1, num_relevant + 1):
             idcg += 1.0 / np.log2(j + 1)
-        
+
         # NDCG = DCG / IDCG
         if idcg > 0:
             ndcg_i = dcg / idcg
@@ -91,10 +80,10 @@ def compute_retrieval_metrics(embeddings, labels, k_values=50):
         ndcg_scores.append(ndcg_i)
 
         # Усредняем по всем запросам
-    metrics[f'recall@{k_values}'] = np.mean(all_recalls)
-    metrics[f'precision@{k_values}'] = np.mean(all_precisions)
-    metrics[f'f1@{k_values}'] = np.mean(all_f1)
-    metrics[f'ndcg@{k_values}'] = np.mean(ndcg_scores)
+    metrics[f"recall@{k_values}"] = np.mean(all_recalls)
+    metrics[f"precision@{k_values}"] = np.mean(all_precisions)
+    metrics[f"f1@{k_values}"] = np.mean(all_f1)
+    metrics[f"ndcg@{k_values}"] = np.mean(ndcg_scores)
 
     return metrics
 
@@ -127,8 +116,8 @@ class MultiModalLightningModule(pl.LightningModule):
         alpha=2.0,
         beta=100.0,
         base=0.7,
-        momentum = 0.9,
-        retrieval_k_values=[5, 10, 50],  # Добавил K значения для метрик
+        momentum=0.9,
+        retrieval_k_values=[5, 10, 50],
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["text_model", "image_model"])
@@ -187,7 +176,7 @@ class MultiModalLightningModule(pl.LightningModule):
             all_labels = torch.cat([x["labels"] for x in self.validation_step_outputs], dim=0)
 
             # Средний loss
-            avg_loss = torch.stack([x["val_loss"] for x in self.validation_step_outputs]).mean()
+            # avg_loss = torch.stack([x["val_loss"] for x in self.validation_step_outputs]).mean()
             # self.log("val_loss", avg_loss, prog_bar=True)
 
             # Вычисляем метрики
@@ -202,7 +191,9 @@ class MultiModalLightningModule(pl.LightningModule):
                         # Логируем все метрики
                         for metric_name, metric_value in metrics.items():
                             log_name = f"val_{metric_name}"
-                            self.log(log_name, metric_value, prog_bar=(metric_name == f"recall@{k}"))
+                            self.log(
+                                log_name, metric_value, prog_bar=(metric_name == f"recall@{k}")
+                            )
 
                     except Exception as e:
                         print(f"Ошибка при вычислении метрик для k={k}: {e}")

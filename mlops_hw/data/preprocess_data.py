@@ -1,8 +1,10 @@
-from data.datamodule import *
 import pandas as pd
+from data.datamodule import ShopeeDataModule
 
 
-def create_datamodule(train_df, val_df, image_dir: str, image_size, num_workers = 4, prefetch_factor = 2, P = 16, K = 4) -> ShopeeDataModule:
+def create_datamodule(
+    train_df, val_df, image_dir: str, image_size, num_workers=4, prefetch_factor=2, P=16, K=4
+) -> ShopeeDataModule:
     """
     Функция для создания DataModule
 
@@ -19,23 +21,25 @@ def create_datamodule(train_df, val_df, image_dir: str, image_size, num_workers 
         val_scale=1.0,
         P=16,
         K=4,
-        num_workers=num_workers,   # 4
-        prefetch_factor=prefetch_factor, # 2
+        num_workers=num_workers,  # 4
+        prefetch_factor=prefetch_factor,  # 2
         pin_memory=True,
     )
 
     return datamodule
 
 
-def preprocess_data_for_model(df_path, 
-                              little_filter_count, 
-                              tokenizer, 
-                              train_ratio, 
-                              image_dir, 
-                              num_workers, 
-                              prefetch_factor,
-                              p_sampler,
-                              k_sampler):
+def preprocess_data_for_model(
+    df_path,
+    little_filter_count,
+    tokenizer,
+    train_ratio,
+    image_dir,
+    num_workers,
+    prefetch_factor,
+    p_sampler,
+    k_sampler,
+):
     df = pd.read_csv(df_path)
 
     if little_filter_count:
@@ -64,8 +68,8 @@ def preprocess_data_for_model(df_path,
         val_df=df_test,
         image_dir=image_dir,
         image_size=420,
-        num_workers = num_workers,
-        prefetch_factor = prefetch_factor,
-        P = p_sampler,
-        K = k_sampler
+        num_workers=num_workers,
+        prefetch_factor=prefetch_factor,
+        P=p_sampler,
+        K=k_sampler,
     )

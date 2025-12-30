@@ -1,5 +1,5 @@
 mlflow:
-  tracking_uri: "http://127.0.0.1:5000"  # локальное хранение
+  tracking_uri: "http://127.0.0.1:8080" # локальное хранение
   experiment_name: "shopee_multimodal"
-  run_name: "exp_${now:%Y-%m-%d_%H-%M-%S}"  # автоматическое имя с timestamp
+  run_name: "exp_${now:%Y-%m-%d_%H-%M-%S}" # автоматическое имя с timestamp
   registered_model_name: "shopee_best_model"

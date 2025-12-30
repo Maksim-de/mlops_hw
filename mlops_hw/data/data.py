@@ -1,10 +1,11 @@
-import torch
+from typing import Dict, List, Tuple
+
 import albumentations as A
 import cv2
 import numpy as np
-from typing import Tuple, List, Dict
-from torch.utils.data import Dataset
+import torch
 from albumentations.pytorch import ToTensorV2
+from torch.utils.data import Dataset
 
 
 class ShopeeDataset(Dataset):
