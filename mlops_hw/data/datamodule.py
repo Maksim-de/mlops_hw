@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
 from data.data import *
 from torch.utils.data import  DataLoader
+from typing import Optional
 
 
 class ShopeeDataModule(pl.LightningDataModule):

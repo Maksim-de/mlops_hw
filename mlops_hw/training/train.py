@@ -1,15 +1,19 @@
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+print(os.path.abspath(__file__))
 from models.joint_model import *
 from data.preprocess_data import *
 
 
 def train_model(
-    df_path="../data/train.csv",
+    df_path="../data/data.csv",
     little_filter_count=3,
     train_ratio=0.8,
-    image_dir="../data/train_images",
+    image_dir="../data/train_images/",
 ):
     # 2. Инициализируем модель
     model = MultiModalLightningModule(
@@ -41,8 +45,8 @@ def train_model(
     trainer = Trainer(
         max_epochs=3,
         # devices=1 if torch.cuda.is_available() else None,
-        accelerator="cpu",  # Явно указываем CPU
-        # accelerator='auto',
+        # accelerator="cpu",  # Явно указываем CPU
+        accelerator='auto',
         logger=logger,
         callbacks=[checkpoint_callback],
         log_every_n_steps=10,
@@ -63,4 +67,8 @@ def train_model(
     return best_model
 
 
-model = train_model()
+if __name__ == '__main__':
+    # Отключаем multiprocessing для диагностики
+    os.environ["OMP_NUM_THREADS"] = "1"
+    
+    model = train_model()

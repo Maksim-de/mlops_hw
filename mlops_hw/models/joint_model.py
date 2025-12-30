@@ -13,6 +13,69 @@ import madgrad
 from pytorch_metric_learning.losses import MultiSimilarityLoss
 from pytorch_metric_learning.miners import MultiSimilarityMiner
 
+def compute_retrieval_metrics(embeddings, labels, k_values=50):
+    """
+    Вычисляет метрики retrieval для Shopee с усреднением по запросам
+
+    Args:
+        embeddings: матрица эмбеддингов [n_samples, embedding_dim]
+        labels: метки товаров [n_samples]
+        k_values: значения K для recall@K, precision@K, F1@K
+
+    Returns:
+        metrics: словарь с метриками
+    """
+    from sklearn.neighbors import NearestNeighbors
+    import numpy as np
+
+    n_samples = len(embeddings)
+
+    # 1. Находим k ближайших соседей для каждого товара
+    max_k = k_values + 1  # +1 потому что первый сосед - сам элемент
+    knn = NearestNeighbors(n_neighbors=max_k, metric='cosine')
+    knn.fit(embeddings)
+
+    distances, indices = knn.kneighbors(embeddings)
+
+    # 2. Вычисляем recall@K, precision@K, F1@K для каждого K
+    recalls = {}
+    precisions = {}
+    f1_scores = {}
+    metrics = {}
+
+    all_recalls = []
+    all_precisions = []
+    all_f1 = []
+
+    for i in range(n_samples):
+      neighbor_indices = indices[i, 1:k_values+1]
+      neighbor_labels = labels[neighbor_indices]
+
+            # Сколько соседей имеют тот же label?
+      correct = np.sum(neighbor_labels == labels[i])
+      total_relevant_items = np.sum(labels == labels[i]) - 1
+      if total_relevant_items > 0:
+        recall_i = correct / total_relevant_items
+      else:
+        recall_i = 0.0
+
+      precision_i = correct / k_values
+
+      if (precision_i + recall_i) > 0:
+        f1_i = 2 * (precision_i * recall_i) / (precision_i + recall_i)
+      else:
+        f1_i = 0.0
+      all_recalls.append(recall_i)
+      all_precisions.append(precision_i)
+      all_f1.append(f1_i)
+
+        # Усредняем по всем запросам
+      metrics[f'recall@{k_values}'] = np.mean(all_recalls)
+      metrics[f'precision@{k_values}'] = np.mean(all_precisions)
+      metrics[f'f1@{k_values}'] = np.mean(all_f1)
+
+    return metrics
+
 
 class JointModel(nn.Module):
     def __init__(self, text_model, image_model):
