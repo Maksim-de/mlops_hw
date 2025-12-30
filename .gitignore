@@ -9,3 +9,4 @@
 mlops_hw/logs/
 *__pycache__
 *.ipynb
+.DS_Store

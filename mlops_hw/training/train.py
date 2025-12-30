@@ -5,8 +5,12 @@ from models.joint_model import *
 from data.preprocess_data import *
 
 
-def train_model(df_path = '../data/train.csv', little_filter_count = 3, train_ratio = 0.8, image_dir = '../data/train_images'):
-
+def train_model(
+    df_path="../data/train.csv",
+    little_filter_count=3,
+    train_ratio=0.8,
+    image_dir="../data/train_images",
+):
     # 2. Инициализируем модель
     model = MultiModalLightningModule(
         lr_image=1e-4,
@@ -16,31 +20,28 @@ def train_model(df_path = '../data/train.csv', little_filter_count = 3, train_ra
         alpha=2.0,
         beta=100.0,
         base=0.7,
-        retrieval_k_values=[1, 10, 50]
+        retrieval_k_values=[1, 10, 50],
     )
 
-    datamodule = preprocess_data_for_model(df_path, little_filter_count, model.tokenizator, train_ratio, image_dir)
-
+    datamodule = preprocess_data_for_model(
+        df_path, little_filter_count, model.tokenizator, train_ratio, image_dir
+    )
 
     checkpoint_callback = ModelCheckpoint(
-        monitor='val_precision@50',
-        mode='max',
+        monitor="val_precision@50",
+        mode="max",
         save_top_k=3,
-        filename='best-{epoch:02d}-{val_precision@50:.4f}',
+        filename="best-{epoch:02d}-{val_precision@50:.4f}",
         save_last=True,
-        verbose=True
+        verbose=True,
     )
 
-    logger = TensorBoardLogger(
-        save_dir='./logs',
-        name='multimodal_model',
-        default_hp_metric=False
-    )
+    logger = TensorBoardLogger(save_dir="./logs", name="multimodal_model", default_hp_metric=False)
 
     trainer = Trainer(
         max_epochs=3,
         # devices=1 if torch.cuda.is_available() else None,
-        accelerator='cpu',  # Явно указываем CPU
+        accelerator="cpu",  # Явно указываем CPU
         # accelerator='auto',
         logger=logger,
         callbacks=[checkpoint_callback],
@@ -50,16 +51,14 @@ def train_model(df_path = '../data/train.csv', little_filter_count = 3, train_ra
         accumulate_grad_batches=1,
         enable_progress_bar=True,
         deterministic=False,
-        precision='16-mixed' if torch.cuda.is_available() else '32-true',
+        precision="16-mixed" if torch.cuda.is_available() else "32-true",
         # Добавляем для отладки
-        num_sanity_val_steps=2  # проверяем 2 валидационных шага перед обучением
+        num_sanity_val_steps=2,  # проверяем 2 валидационных шага перед обучением
     )
 
     trainer.fit(model, datamodule=datamodule)
 
-    best_model = MultiModalLightningModule.load_from_checkpoint(
-        checkpoint_callback.best_model_path
-    )
+    best_model = MultiModalLightningModule.load_from_checkpoint(checkpoint_callback.best_model_path)
 
     return best_model
 

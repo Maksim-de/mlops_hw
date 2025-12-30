@@ -1,14 +1,15 @@
 import torch
-from torch.utils.data import Dataset, DataLoader
+import albumentations as A
 import cv2
 import numpy as np
-from typing import Optional, Tuple, List, Dict
-import albumentations as A
+from typing import Tuple, List, Dict
+from torch.utils.data import Dataset
 from albumentations.pytorch import ToTensorV2
 
 
 class ShopeeDataset(Dataset):
     """Кастомный датасет для Shopee"""
+
     def __init__(self, df, image_dir: str, augs: A.Compose):
         self.df = df
         self.augs = augs
@@ -20,27 +21,27 @@ class ShopeeDataset(Dataset):
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, Dict[str, torch.Tensor], torch.Tensor]:
         # Текстовые фичи (BERT эмбеддинги)
         text_features = {
-            'input_ids': torch.tensor(self.df['input_ids'].iloc[idx], dtype=torch.long),
-            'attention_mask': torch.tensor(self.df['attention_mask'].iloc[idx], dtype=torch.long)
+            "input_ids": torch.tensor(self.df["input_ids"].iloc[idx], dtype=torch.long),
+            "attention_mask": torch.tensor(self.df["attention_mask"].iloc[idx], dtype=torch.long),
         }
 
         # Изображение
-        img_path = self.image_dir + self.df.iloc[idx]['image']
+        img_path = self.image_dir + self.df.iloc[idx]["image"]
         image = cv2.imread(img_path)
         if image is None:
             raise ValueError(f"Cannot read image: {img_path}")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = self.augs(image=image)['image']
+        image = self.augs(image=image)["image"]
 
         # Целевая переменная
-        target = torch.tensor(self.df['label_group'].iloc[idx], dtype=torch.long)
+        target = torch.tensor(self.df["label_group"].iloc[idx], dtype=torch.long)
 
         return image, text_features, target
 
 
-def make_augmentations(image_size: int = 420,
-                       is_train: bool = False,
-                       scale: float = 1.0) -> A.Compose:
+def make_augmentations(
+    image_size: int = 420, is_train: bool = False, scale: float = 1.0
+) -> A.Compose:
     """
     Создает аугментации для изображений
 
@@ -52,52 +53,60 @@ def make_augmentations(image_size: int = 420,
     im_size = int(round(scale * image_size))
 
     if is_train:
-        transforms = A.Compose([
-            A.LongestMaxSize(max_size=im_size, p=1.0),
-            A.PadIfNeeded(
-                min_height=im_size,
-                min_width=im_size,
-                border_mode=cv2.BORDER_CONSTANT,
-                value=0,
-                p=1.0
-            ),
-            A.HorizontalFlip(p=0.5),
-            A.OneOf([
-                A.RandomBrightnessContrast(p=0.5),
-                A.RandomGamma(p=0.5),
-            ], p=0.3),
-            A.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225],
-                max_pixel_value=255.0,
-                p=1.0
-            ),
-            ToTensorV2(p=1.0)
-        ])
+        transforms = A.Compose(
+            [
+                A.LongestMaxSize(max_size=im_size, p=1.0),
+                A.PadIfNeeded(
+                    min_height=im_size,
+                    min_width=im_size,
+                    border_mode=cv2.BORDER_CONSTANT,
+                    value=0,
+                    p=1.0,
+                ),
+                A.HorizontalFlip(p=0.5),
+                A.OneOf(
+                    [
+                        A.RandomBrightnessContrast(p=0.5),
+                        A.RandomGamma(p=0.5),
+                    ],
+                    p=0.3,
+                ),
+                A.Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225],
+                    max_pixel_value=255.0,
+                    p=1.0,
+                ),
+                ToTensorV2(p=1.0),
+            ]
+        )
     else:
-        transforms = A.Compose([
-            A.LongestMaxSize(max_size=im_size, p=1.0),
-            A.PadIfNeeded(
-                min_height=im_size,
-                min_width=im_size,
-                border_mode=cv2.BORDER_CONSTANT,
-                value=0,
-                p=1.0
-            ),
-            A.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225],
-                max_pixel_value=255.0,
-                p=1.0
-            ),
-            ToTensorV2(p=1.0)
-        ])
+        transforms = A.Compose(
+            [
+                A.LongestMaxSize(max_size=im_size, p=1.0),
+                A.PadIfNeeded(
+                    min_height=im_size,
+                    min_width=im_size,
+                    border_mode=cv2.BORDER_CONSTANT,
+                    value=0,
+                    p=1.0,
+                ),
+                A.Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225],
+                    max_pixel_value=255.0,
+                    p=1.0,
+                ),
+                ToTensorV2(p=1.0),
+            ]
+        )
 
     return transforms
 
 
 class PKSampler(torch.utils.data.Sampler):
     """PKSampler для метрического обучения"""
+
     def __init__(self, labels: List[int], P: int, K: int, seed: int = 42):
         """
         Args:
@@ -121,10 +130,7 @@ class PKSampler(torch.utils.data.Sampler):
             self.class_indices[label].append(idx)
 
         # Оставляем только классы с ≥K примерами
-        self.valid_classes = [
-            c for c, indices in self.class_indices.items()
-            if len(indices) >= K
-        ]
+        self.valid_classes = [c for c, indices in self.class_indices.items() if len(indices) >= K]
 
         if len(self.valid_classes) < P:
             raise ValueError(
@@ -133,10 +139,12 @@ class PKSampler(torch.utils.data.Sampler):
             )
 
         # Вычисляем количество батчей
-        self.n_batches = sum(
-            len(indices) for c, indices in self.class_indices.items()
-            if c in self.valid_classes
-        ) // self.batch_size
+        self.n_batches = (
+            sum(
+                len(indices) for c, indices in self.class_indices.items() if c in self.valid_classes
+            )
+            // self.batch_size
+        )
 
         print(f"PKSampler: {len(self.valid_classes)} классов, {self.n_batches} батчей")
 
@@ -144,11 +152,7 @@ class PKSampler(torch.utils.data.Sampler):
         for _ in range(self.n_batches):
             batch_indices = []
             # Выбираем P случайных классов
-            selected_classes = self.rng.choice(
-                self.valid_classes,
-                size=self.P,
-                replace=False
-            )
+            selected_classes = self.rng.choice(self.valid_classes, size=self.P, replace=False)
 
             # Для каждого класса выбираем K примеров
             for cls in selected_classes:
@@ -165,4 +169,3 @@ class PKSampler(torch.utils.data.Sampler):
 
     def __len__(self) -> int:
         return self.n_batches
-

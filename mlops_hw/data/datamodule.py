@@ -1,22 +1,25 @@
-from data.data import *
 import pytorch_lightning as pl
+from data.data import *
+from torch.utils.data import  DataLoader
 
 
 class ShopeeDataModule(pl.LightningDataModule):
     """PyTorch Lightning DataModule для Shopee"""
 
-    def __init__(self,
-                 train_df,
-                 val_df,
-                 image_dir: str,
-                 image_size: int = 224,
-                 train_scale: float = 1.0,
-                 val_scale: float = 1.0,
-                 P: int = 16,  # PK-Sampler параметры
-                 K: int = 4,
-                 num_workers: int = 4,
-                 prefetch_factor: int = 2,
-                 pin_memory: bool = True):
+    def __init__(
+        self,
+        train_df,
+        val_df,
+        image_dir: str,
+        image_size: int = 224,
+        train_scale: float = 1.0,
+        val_scale: float = 1.0,
+        P: int = 16,  # PK-Sampler параметры
+        K: int = 4,
+        num_workers: int = 4,
+        prefetch_factor: int = 2,
+        pin_memory: bool = True,
+    ):
         super().__init__()
 
         self.train_df = train_df
@@ -48,51 +51,39 @@ class ShopeeDataModule(pl.LightningDataModule):
         if stage == "fit" or stage is None:
             # Создаем аугментации для тренировки
             train_augs = make_augmentations(
-                image_size=self.image_size,
-                is_train=True,
-                scale=self.train_scale
+                image_size=self.image_size, is_train=True, scale=self.train_scale
             )
 
             # Создаем тренировочный датасет
             self.train_dataset = ShopeeDataset(
-                df=self.train_df,
-                image_dir=self.image_dir,
-                augs=train_augs
+                df=self.train_df, image_dir=self.image_dir, augs=train_augs
             )
 
             # Создаем PKSampler для тренировки
             self.train_sampler = PKSampler(
-                labels=self.train_df['label_group'].values,
-                P=self.P,
-                K=self.K
+                labels=self.train_df["label_group"].values, P=self.P, K=self.K
             )
 
             # Создаем аугментации для валидации
             val_augs = make_augmentations(
-                image_size=self.image_size,
-                is_train=False,
-                scale=self.val_scale
+                image_size=self.image_size, is_train=False, scale=self.val_scale
             )
 
             # Создаем валидационный датасет
             self.val_dataset = ShopeeDataset(
-                df=self.val_df,
-                image_dir=self.image_dir,
-                augs=val_augs
+                df=self.val_df, image_dir=self.image_dir, augs=val_augs
             )
 
         if stage == "test" or stage is None:
             # Для теста используем те же аугментации что и для валидации
             test_augs = make_augmentations(
-                image_size=self.image_size,
-                is_train=False,
-                scale=self.val_scale
+                image_size=self.image_size, is_train=False, scale=self.val_scale
             )
 
             self.test_dataset = ShopeeDataset(
                 df=self.val_df,  # или отдельный test_df если есть
                 image_dir=self.image_dir,
-                augs=test_augs
+                augs=test_augs,
             )
 
     def train_dataloader(self) -> DataLoader:
@@ -106,7 +97,7 @@ class ShopeeDataModule(pl.LightningDataModule):
             num_workers=self.num_workers,
             pin_memory=self.pin_memory and torch.cuda.is_available(),
             prefetch_factor=self.prefetch_factor,
-            persistent_workers=self.num_workers > 0
+            persistent_workers=self.num_workers > 0,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -121,7 +112,7 @@ class ShopeeDataModule(pl.LightningDataModule):
             num_workers=self.num_workers,
             pin_memory=self.pin_memory and torch.cuda.is_available(),
             prefetch_factor=self.prefetch_factor,
-            persistent_workers=self.num_workers > 0
+            persistent_workers=self.num_workers > 0,
         )
 
     def test_dataloader(self) -> DataLoader:
@@ -134,12 +125,9 @@ class ShopeeDataModule(pl.LightningDataModule):
             batch_size=self.P * self.K,
             shuffle=False,
             num_workers=self.num_workers,
-            pin_memory=self.pin_memory and torch.cuda.is_available()
+            pin_memory=self.pin_memory and torch.cuda.is_available(),
         )
 
     def predict_dataloader(self) -> DataLoader:
         """DataLoader для инференса (аналогичен test)"""
         return self.test_dataloader()
-
-
-

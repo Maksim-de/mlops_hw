@@ -4,12 +4,13 @@ import pytorch_lightning as pl
 from transformers import AutoModel, AutoTokenizer
 from typing import Dict, Any, Optional
 
+
 class TinyBERTWrapper(nn.Module):
     def __init__(self):
         super().__init__()
-        self.bert = AutoModel.from_pretrained('prajjwal1/bert-tiny')
+        self.bert = AutoModel.from_pretrained("prajjwal1/bert-tiny")
         self.projection = nn.Linear(128, 256)
-        self.tokenizator = AutoTokenizer.from_pretrained('prajjwal1/bert-tiny')
+        self.tokenizator = AutoTokenizer.from_pretrained("prajjwal1/bert-tiny")
 
     def forward(self, batch):
         with torch.no_grad():
