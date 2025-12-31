@@ -13,7 +13,6 @@ from shopee_product_matching.models.joint_model import MultiModalLightningModule
 
 @hydra.main(version_base=None, config_path="../../conf", config_name="config")
 def train_model(cfg: DictConfig):
-
     if cfg.mlflow.get("tracking_uri"):
         mlflow.set_tracking_uri(cfg.mlflow.tracking_uri)
 
@@ -94,7 +93,7 @@ def train_model(cfg: DictConfig):
 
 
 if __name__ == "__main__":
-    # Отключаем multiprocessing 
+    # Отключаем multiprocessing
     os.environ["OMP_NUM_THREADS"] = "1"
 
     model = train_model()
