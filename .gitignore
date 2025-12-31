@@ -8,6 +8,7 @@
 *.ipr
 shopee_product_matching/logs/
 shopee_product_matching/outputs/
+logs/
 *__pycache__
 *.ipynb
 .DS_Store
@@ -15,3 +16,4 @@ mlruns/
 mlartifacts/
 mlflow.db
 *.db
+outputs/

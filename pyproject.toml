@@ -12,7 +12,6 @@ dependencies = [
     "pandas (>=2.3.3,<3.0.0)",
     "albumentations (>=2.0.8,<3.0.0)",
     "dvc[gdrive] (>=3.65.0,<4.0.0)",
-    "kaggle (>=1.8.2,<2.0.0)",
     "lightning (>=2.6.0,<3.0.0)",
     "madgrad (>=1.3,<2.0)",
     "pytorch-metric-learning (>=2.9.0,<3.0.0)",
@@ -26,7 +25,6 @@ dependencies = [
     "pyopenssl (==20.0.1)",
     "cryptography (>=43.0.0,<44.0.0)",
     "dvc-s3 (>=3.2.2,<4.0.0)",
-    "git-lfs (>=1.6,<2.0)",
     "hydra-core (>=1.3.2,<2.0.0)",
     "mlflow (>=3.8.1,<4.0.0)",
 
@@ -40,7 +38,6 @@ build-backend = "poetry.core.masonry.api"
 [dependency-groups]
 dev = [
     "pre-commit (>=4.5.0,<5.0.0)",
-    "fire (>=0.7.1,<0.8.0)",
     "isort (>=7.0.0,<8.0.0)",
     "ruff (>=0.14.10,<0.15.0)"
 ]
@@ -58,33 +55,7 @@ select = [
     # pycodestyle
     "E", "W",
     # Pyflakes
-    "F",
-    # # pyupgrade
-    # "UP",
-    # # flake8-bugbear
-    # "B",
-    # # flake8-simplify
-    # "SIM",
-    # # flake8-builtins
-    # "A",
-    # # flake8-return
-    # "RET",
-    # # flake8-use-pathlib
-    # "PTH",
-    # # flynt
-    # "FLY",
-    # # mccabe
-    # "C90",
-    # # NumPy-specific rules
-    # "NPY",
-    # # pep8-naming
-    # "N",
-    # # Ruff-specific rules
-    # "RUF",
-    # # Pylint - very strict, may be use when have enough time
-    # "PL",
-    # # refurb - also may be overwhelming
-    # "FURB",
+    "F"
 ]
 
 

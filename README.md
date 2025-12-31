@@ -124,22 +124,22 @@ poetry shell
 
 4.  Скачайте датасет одним из двух способов:
 
-        4.1 При помощи dvc (секреты можно запросить в телеграмме у @pipici_pip):
+При помощи dvc (секреты можно запросить в телеграмме у @pipici_pip).
 
-    Добавьте секреты в локальный конфиг:
+- Добавьте секреты в локальный конфиг:
 
 ```bash
 dvc remote modify myremote --local gdrive_client_id КРЕДЫ_1
 dvc remote modify myremote --local gdrive_client_secret КРЕДЫ_2
 ```
 
-    Загрузите данные:
+- Загрузите данные:
 
 ```bash
 dvc pull
 ```
 
-    4.2 Загрузите данные напрямую с гугл диска:
+Загрузите данные напрямую с гугл диска:
 
 ```bash
 gdown --folder "https://drive.google.com/drive/folders/1uQzxZCg56fW3RxTLER9qQWkFxxTGiNyK" -O ./data --remaining-ok
